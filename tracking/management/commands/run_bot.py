@@ -20,6 +20,7 @@ def clean_text(text: str) -> List[str]:
 
 async def poll_for_updates(bot: 'tracking.bot.WeighbotClient'):
     while True:
+        logger.info('Polling contest updates')
         try:
             # Update all our contests
             async for contest in Contest.objects.all():

@@ -8,7 +8,6 @@ from django.core.files.base import ContentFile
 
 from django.utils import timezone
 
-# from tracking.bot import WeighbotClient
 from tracking.models import Contest, CheckIn, ContestantCheckIn, Contestant, CheckInPhoto
 
 logger = logging.getLogger(__name__)
@@ -69,6 +68,7 @@ async def log_check_in(message: discord.Message, check_in: Optional[CheckIn]):
     contestant = await Contestant.objects.aget(discord_id=str(message.author.id))
 
     contestant_check_in = await ContestantCheckIn.objects.acreate(
+        discord_id=message.id,
         check_in=check_in,
         contestant=contestant,
         weight=float(message.content)

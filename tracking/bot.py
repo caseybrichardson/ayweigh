@@ -57,8 +57,7 @@ class WeighbotClient(discord.Client):
             if not check_in.finished:
                 await log_check_in(message, check_in)
             else:
-                # The check-in is done you dummie
-                await message.channel.send('The check-in is done you dummie')
+                await message.channel.send('The check-in is done you dummy')
         else:
             logger.info('Received likely command')
             # Could be a channel? Maybe someone wants to command the bot to do something
