@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-zzkm@frns-)!5eb^un@*x3#%3(!06w2e8ti*1l(w9nph4m0$@d
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [os.environ.get('ALLOWED_HOST_NAME', '127.0.0.1')]
 
 
 # Application definition
@@ -90,13 +90,26 @@ LOGGING = {
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
+USE_PROD_DB_CONFIG = os.environ.get('USE_PROD_DB_CONFIG', None)
 
+if DEBUG and USE_PROD_DB_CONFIG is None:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.environ.get('DB_NAME', 'ayweigh'),
+            'USER': os.environ['DB_USER'],
+            'PASSWORD': os.environ['DB_PASS'],
+            'HOST': os.environ['DB_HOST'],
+            'PORT': os.environ.get('DB_PORT', '5432'),
+        }
+    }
 
 # Password validation
 # https://docs.djangoproject.com/en/4.1/ref/settings/#auth-password-validators
@@ -132,6 +145,8 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.1/howto/static-files/
 
+STATIC_ROOT = 'static/'
+
 STATIC_URL = 'static/'
 
 # Media files
@@ -144,5 +159,8 @@ MEDIA_ROOT = 'uploads/'
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Bot token
+# Optional because there are multiple run modes for the application
 
 BOT_TOKEN = os.environ.get('BOT_TOKEN')

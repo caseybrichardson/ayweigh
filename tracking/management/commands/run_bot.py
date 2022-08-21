@@ -4,6 +4,7 @@ from typing import List
 
 import discord
 from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
 from django.core.management import BaseCommand
 
 from tracking.bot import WeighbotClient
@@ -57,6 +58,9 @@ async def monitor():
 class Command(BaseCommand):
     def handle(self, *args, **options):
         logger.info('=====> Starting the bot')
+
+        if settings.BOT_TOKEN is None:
+            raise ImproperlyConfigured('Missing BOT_TOKEN setting')
 
         loop = asyncio.get_event_loop()
         t = loop.create_task(monitor())
