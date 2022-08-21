@@ -12,4 +12,4 @@ COPY . /app/
 
 RUN mkdir /gunicorn-temp
 
-CMD ["gunicorn", "--worker-tmp-dir", "/gunicorn-temp/", "--bind=0.0.0.0", "weighbot.wsgi"]
+CMD ["gunicorn", "--worker-tmp-dir", "/gunicorn-temp/", "weighbot.wsgi"]
