@@ -8,6 +8,7 @@ media
 uploads
 **/fixtures
 staticfiles/*
+!staticfiles/.gitkeep
 
 # Backup files #
 *.bak
