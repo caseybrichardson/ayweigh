@@ -48,7 +48,7 @@ class Contestant(DiscordIdentifiable, TimeAuditable, ExternallyIdentifiable):
     name = models.CharField(max_length=128, blank=False)
 
     def __str__(self):
-        return f'Contestant({self.id}, {self.name}})'
+        return f'Contestant({self.id}, {self.name})'
 
 
 class CheckIn(ExternallyIdentifiable):

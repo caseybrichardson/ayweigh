@@ -3,6 +3,7 @@ import logging
 from typing import Optional
 
 import discord
+import django.db
 from asgiref.sync import sync_to_async
 from django.core.files.base import ContentFile
 
@@ -44,18 +45,30 @@ async def initialize_contest(contest: Contest):
 
 async def initialize_check_in(check_in: CheckIn, bot: 'tracking.bot.WeighbotClient'):
     channel_id = int(check_in.contest.channel_id)
-    channel = bot.get_channel(channel_id)
-    thread = await channel.create_thread(
-        name=f'Check-in {check_in.starting}',
-        type=discord.ChannelType.public_thread,
-        auto_archive_duration=1440
-    )
+    channel: discord.TextChannel = bot.get_channel(channel_id)
+    try:
+        start = await channel.send(f'Check-in {check_in.starting} is starting!')
+        thread = await channel.create_thread(
+            name=f'Check-in',
+            message=start,
+            type=discord.ChannelType.public_thread,
+            auto_archive_duration=1440
+        )
+    except discord.errors.DiscordException:
+        logger.exception('Failure creating thread')
+        return
 
     check_in.started_at = timezone.now()
     check_in.thread_id = thread.id
-    await sync_to_async(check_in.save, thread_sensitive=True)()
+    try:
+        await sync_to_async(check_in.save, thread_sensitive=True)()
+    except django.db.Error:
+        logger.exception('Error saving check-in start, %s', check_in)
+        return
 
-    await thread.send('Send a message with your weight in pounds, and any images you want to share')
+    await thread.send(
+        'Send a message with your weight in pounds, and any images you want to share (all in the same message)'
+    )
     # Once initialized, the bot should route and handle messages using DB lookups on the thread ID.
     # The check-in will be closed by the update polling.
 
@@ -78,18 +91,16 @@ async def log_check_in(message: discord.Message, check_in: Optional[CheckIn]):
         weight=float(message.content)
     )
 
-    logger.info('Attachments contain: %s', message.attachments)
     for attachment in message.attachments:
         data = await attachment.read()
         with ContentFile(data, name=attachment.filename) as file_attachment:
-            await CheckInPhoto.objects.acreate(
+            photo = await CheckInPhoto.objects.acreate(
                 discord_id=attachment.id,
                 kind='check-in',
                 contestant_check_in=contestant_check_in,
                 image=file_attachment
             )
-        logger.info('Attachment is: %s', attachment)
-
+            logger.info('Handled attachment %s: %s', attachment.id, photo)
     await message.add_reaction('💪')
 
 
