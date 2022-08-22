@@ -27,6 +27,7 @@ class WeighbotClient(discord.Client):
                 discord_id=str(message.author.id),
                 contest__channel_id=message.channel.id
             )
+            await message.add_reaction('❌')
             logger.info('User attempting to join contest again')
         except Contestant.DoesNotExist:
             logger.info('Joining user: %s %s', message.author.id, message.author.name)
@@ -38,9 +39,7 @@ class WeighbotClient(discord.Client):
                 discord_id=message.author.id,
                 contest=contest
             )
-
-    async def force_check_in_start(self, message: discord.Message):
-        pass
+            await message.add_reaction('✅')
 
     async def on_ready(self):
         logger.info('Bot is ready')
@@ -49,7 +48,9 @@ class WeighbotClient(discord.Client):
         logger.info(message)
         channel_id = message.channel.id
         message_id = message.id
-        logger.info('(channel: %s + message: %s) -> %s: %s', channel_id, message_id, message.channel.name, message.content)
+        logger.info(
+            '(channel: %s + message: %s) -> %s: %s', channel_id, message_id, message.channel.name, message.content
+        )
 
         # See if we have a check-in
         check_in = await self.get_check_in_for_thread(channel_id)
@@ -63,5 +64,3 @@ class WeighbotClient(discord.Client):
             # Could be a channel? Maybe someone wants to command the bot to do something
             if message.content == '!wbjoin':
                 await self.handle_join(message)
-            elif message.content == '!wbforce':
-                await self.force_check_in_start(message)

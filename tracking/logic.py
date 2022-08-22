@@ -65,7 +65,11 @@ async def log_check_in(message: discord.Message, check_in: Optional[CheckIn]):
     if check_in is None:
         check_in = await CheckIn.objects.aget(thread_id=message.channel.id)
 
-    contestant = await Contestant.objects.aget(discord_id=str(message.author.id))
+    try:
+        contestant = await Contestant.objects.aget(discord_id=str(message.author.id))
+    except Contestant.DoesNotExist:
+        await message.reply("You're not in the contest yet. Do you need to `!wbjoin`?")
+        return
 
     contestant_check_in = await ContestantCheckIn.objects.acreate(
         discord_id=message.id,
@@ -85,6 +89,8 @@ async def log_check_in(message: discord.Message, check_in: Optional[CheckIn]):
                 image=file_attachment
             )
         logger.info('Attachment is: %s', attachment)
+
+    await message.add_reaction('💪')
 
 
 async def get_startable_check_in(contest: Contest):
