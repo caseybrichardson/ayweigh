@@ -39,10 +39,16 @@ class Contest(TimeAuditable, ExternallyIdentifiable):
     channel_id = models.CharField(max_length=64, null=True, blank=False)
     finished = models.BooleanField(default=False)
 
+    def __str__(self):
+        return f'Contest({self.id}, {self.name}, {self.starting} - {self.final_check_in}, finished: {self.finished})'
+
 
 class Contestant(DiscordIdentifiable, TimeAuditable, ExternallyIdentifiable):
     contest = models.ForeignKey('tracking.Contest', null=True, related_name='contestants', on_delete=models.CASCADE)
     name = models.CharField(max_length=128, blank=False)
+
+    def __str__(self):
+        return f'Contestant({self.id}, {self.name}})'
 
 
 class CheckIn(ExternallyIdentifiable):
@@ -53,13 +59,16 @@ class CheckIn(ExternallyIdentifiable):
     finished = models.BooleanField(default=False)
 
     def __str__(self):
-        return f'CheckIn({self.starting}, started: {self.started_at is not None})'
+        return f'CheckIn({self.id}, {self.starting}, started: {self.started_at is not None})'
 
 
 class ContestantCheckIn(DiscordIdentifiable, TimeAuditable, ExternallyIdentifiable):
     check_in = models.ForeignKey('tracking.CheckIn', related_name='contestant_check_ins', on_delete=models.CASCADE)
     contestant = models.ForeignKey('tracking.Contestant', related_name='check_ins', on_delete=models.CASCADE)
     weight = models.FloatField()
+
+    def __str__(self):
+        return f'ContestantCheckIn({self.contestant.name}, {self.weight}lbs, {self.check_in.starting})'
 
 
 def check_in_photo_upload_dest(instance: 'CheckInPhoto', filename: str):
@@ -73,3 +82,7 @@ class CheckInPhoto(DiscordIdentifiable, TimeAuditable, ExternallyIdentifiable):
     kind = models.CharField(max_length=32, blank=True)  # Used to identify scale shot, body shot, etc
     contestant_check_in = models.ForeignKey('tracking.ContestantCheckIn', on_delete=models.CASCADE)
     image = models.ImageField(upload_to=check_in_photo_upload_dest)
+
+    def __str__(self):
+        cci = self.contestant_check_in
+        return f'CheckInPhoto({self.kind}, {cci.contestant.name}, {cci.check_in.starting})'
