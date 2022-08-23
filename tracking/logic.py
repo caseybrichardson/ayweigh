@@ -1,15 +1,15 @@
 import datetime
 import logging
+import re
 from typing import Optional
 
 import discord
 import django.db
 from asgiref.sync import sync_to_async
 from django.core.files.base import ContentFile
-
 from django.utils import timezone
 
-from tracking.models import Contest, CheckIn, ContestantCheckIn, Contestant, CheckInPhoto
+from tracking.models import *
 
 logger = logging.getLogger(__name__)
 
@@ -84,11 +84,24 @@ async def log_check_in(message: discord.Message, check_in: Optional[CheckIn]):
         await message.reply("You're not in the contest yet. Do you need to `!wbjoin`?")
         return
 
-    contestant_check_in = await ContestantCheckIn.objects.acreate(
-        discord_id=message.id,
+    weights = get_weight_from_check_in_text(message.content)
+    if len(weights) > 1:
+        await message.reply("Look you ding-dong, send one number in the message")
+        return
+    elif len(weights) == 0:
+        await message.reply("Put a number in your check-in ding-dong")
+        return
+
+    weight, units = weights[0]
+
+    contestant_check_in, _ = await ContestantCheckIn.objects.aupdate_or_create(
         check_in=check_in,
         contestant=contestant,
-        weight=float(message.content)
+        defaults={
+            'weight': weight,
+            'units': units,
+            'discord_id': message.id,
+        }
     )
 
     for attachment in message.attachments:
@@ -104,7 +117,7 @@ async def log_check_in(message: discord.Message, check_in: Optional[CheckIn]):
     await message.add_reaction('💪')
 
 
-async def get_startable_check_in(contest: Contest):
+async def get_startable_check_in(contest: Contest) -> Optional[CheckIn]:
     current_date = timezone.now().date()
 
     try:
@@ -116,3 +129,23 @@ async def get_startable_check_in(contest: Contest):
         return check_in
     except CheckIn.DoesNotExist:
         return None
+
+
+async def get_running_check_in(contest: Contest) -> Optional[CheckIn]:
+    try:
+        check_in = await contest.check_ins.filter(
+            finished=False,
+            thread_id__isnull=False,
+            started_at__isnull=False
+        ).aearliest('starting')
+        return check_in
+    except CheckIn.DoesNotExist:
+        return None
+
+
+weight_pattern = re.compile(r"(\d+\.?\d*)(?:\s*)(lbs?|kg?)?")
+
+
+def get_weight_from_check_in_text(content: str):
+    results = weight_pattern.findall(content)
+    return [(float(weight), unit) for weight, unit in results]

@@ -66,9 +66,11 @@ class ContestantCheckIn(DiscordIdentifiable, TimeAuditable, ExternallyIdentifiab
     check_in = models.ForeignKey('tracking.CheckIn', related_name='contestant_check_ins', on_delete=models.CASCADE)
     contestant = models.ForeignKey('tracking.Contestant', related_name='check_ins', on_delete=models.CASCADE)
     weight = models.FloatField()
+    units = models.CharField(max_length=16)
+    message_text = models.TextField(blank=True, null=False)
 
     def __str__(self):
-        return f'ContestantCheckIn({self.contestant.name}, {self.weight}lbs, {self.check_in.starting})'
+        return f'ContestantCheckIn({self.id}, {self.weight}{self.units}, contestant_id: {self.contestant_id})'
 
 
 def check_in_photo_upload_dest(instance: 'CheckInPhoto', filename: str):
@@ -85,4 +87,4 @@ class CheckInPhoto(DiscordIdentifiable, TimeAuditable, ExternallyIdentifiable):
 
     def __str__(self):
         cci = self.contestant_check_in
-        return f'CheckInPhoto({self.kind}, {cci.contestant.name}, {cci.check_in.starting})'
+        return f'CheckInPhoto({self.id}, {self.kind})'

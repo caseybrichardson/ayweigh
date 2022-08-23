@@ -63,6 +63,8 @@ class ContestantCheckInAdmin(admin.ModelAdmin):
 
     list_display = [
         'id',
+        'weight',
+        'units',
         'discord_id',
         'updated_at',
         'created_at'

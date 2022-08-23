@@ -3,39 +3,53 @@ import logging
 from typing import List
 
 import discord
+from asgiref.sync import sync_to_async
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.core.management import BaseCommand
+from django.utils import timezone
 
 from tracking.bot import WeighbotClient
-from tracking.logic import initialize_contest, initialize_check_in, get_startable_check_in
+from tracking.logic import initialize_contest, initialize_check_in, get_startable_check_in, get_running_check_in
 from tracking.models import Contest
 
 logger = logging.getLogger(__name__)
 
 
-def clean_text(text: str) -> List[str]:
-    return text.strip().split(' ')
-
-
 async def poll_for_updates(bot: 'tracking.bot.WeighbotClient'):
     while True:
         logger.info('Polling contest updates')
+        current_datetime = timezone.now()
         try:
-            # Update all our contests
-            async for contest in Contest.objects.all():
+            # Update all our un-finished contests
+            contests = Contest.objects.filter(
+                finished=False
+            ).prefetch_related('check_ins')
+
+            async for contest in contests:
                 # Is this contest un-initialized?
                 check_in_count = await contest.check_ins.acount()
                 if check_in_count == 0:
+                    logger.info('Initializing contest %s', contest)
                     await initialize_contest(contest)
-                # The contest is initialized, check if we need to start the next check-in
+
+                # If we have a running check_in, then only update that.
+                # Otherwise, look for and initialize check_ins that are ready.
+                running_check_in = await get_running_check_in(contest)
+                if running_check_in:
+                    time_since_start = current_datetime - running_check_in.started_at
+                    if time_since_start.days >= 1:
+                        logger.info('Closing out check-in: %s', running_check_in)
+                        running_check_in.finished = True
+                        await sync_to_async(running_check_in.save, thread_sensitive=True)()
+                        channel = bot.get_channel(int(contest.channel_id))
+                        await channel.send(f'💪 Check in for {running_check_in.starting} is over 💪')
                 else:
-                    logger.info('Contest is waiting for startable check-in: %s', contest)
                     startable = await get_startable_check_in(contest)
-                    if startable:
+                    if startable is not None:
                         logger.info('Found a startable check-in: %s', startable)
                         await initialize_check_in(startable, bot)
-        except:
+        except Exception:
             logger.exception('Failure during update poll')
 
         # We don't need to run this loop a lot, so keep this number (relatively) high
@@ -51,7 +65,7 @@ async def monitor():
         asyncio.create_task(bot.start(settings.BOT_TOKEN))
         await asyncio.sleep(10)
         asyncio.create_task(poll_for_updates(bot))
-    except:
+    except Exception:
         logger.exception('Failed to initialize')
     logger.info('Done initializing')
 

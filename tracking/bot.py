@@ -52,15 +52,17 @@ class WeighbotClient(discord.Client):
             '(channel: %s + message: %s) -> %s: %s', channel_id, message_id, message.channel.name, message.content
         )
 
-        # See if we have a check-in
-        check_in = await self.get_check_in_for_thread(channel_id)
-        if check_in is not None:
-            if not check_in.finished:
-                await log_check_in(message, check_in)
-            else:
-                await message.channel.send('The check-in is done you dummy')
-        else:
-            logger.info('Received likely command')
-            # Could be a channel? Maybe someone wants to command the bot to do something
-            if message.content == '!wbjoin':
+        match message.content.split():
+            case ['!wbjoin', *_]:
                 await self.handle_join(message)
+            case ['!wbcheckin', *_]:
+                check_in = await self.get_check_in_for_thread(channel_id)
+                if check_in is not None:
+                    if not check_in.finished:
+                        await log_check_in(message, check_in)
+                    else:
+                        await message.channel.send('The check-in is done you dummy')
+            case ['!wbcard', *_]:
+                pass
+            case ['!wbhelp', *_]:
+                pass
