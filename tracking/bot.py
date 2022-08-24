@@ -45,6 +45,9 @@ class WeighbotClient(discord.Client):
         logger.info('Bot is ready')
 
     async def on_message(self, message: discord.Message):
+        if message.author.id == self.user.id:
+            return
+
         logger.info(message)
         channel_id = message.channel.id
         message_id = message.id
