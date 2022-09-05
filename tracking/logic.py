@@ -28,11 +28,14 @@ async def initialize_contest(contest: Contest):
 
     # Create the intermediate check-ins
     current_date = contest.starting + time_interval
+    previous = None
     while current_date < final_check_in:
-        await CheckIn.objects.acreate(
+        check_in = await CheckIn.objects.acreate(
             contest=contest,
-            starting=current_date
+            starting=current_date,
+            previous=previous
         )
+        previous = check_in
         current_date = current_date + time_interval
 
     # Create the final check-in if the last date we were on is not the final date of the contest
