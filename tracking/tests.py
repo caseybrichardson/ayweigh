@@ -25,12 +25,18 @@ def init_happy_path_contest(period: int, num_check_ins: int):
 
 class ContestTestCase(TestCase):
     def setUp(self) -> None:
-        self.num_check_ins = 3
+        self.num_check_ins = 10
         self.contest = init_happy_path_contest(period=7, num_check_ins=self.num_check_ins)
 
     async def test_contest_initialization(self):
         await initialize_contest(self.contest)
         self.assertEqual(await self.contest.check_ins.acount(), self.num_check_ins)
+        all_check_ins = [check_in async for check_in in self.contest.check_ins.select_related('previous').order_by('starting')]
+        previous = all_check_ins[0]
+        for check_in in all_check_ins[1:]:
+            self.assertEqual(previous.starting, check_in.previous.starting)
+            self.assertLess(previous.starting, check_in.starting)
+            previous = check_in
 
 
 class CheckInQueryTestCase(TestCase):
