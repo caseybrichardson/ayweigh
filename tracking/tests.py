@@ -5,8 +5,7 @@ from unittest.mock import Mock, AsyncMock
 from django.test import TestCase
 from django.utils import timezone
 
-from tracking.logic import initialize_contest, get_startable_check_in, initialize_check_in, \
-    get_weight_from_check_in_text
+from tracking.logic import initialize_contest, get_startable_check_in, initialize_check_in
 from tracking.models import Contest, CheckIn
 
 
@@ -82,56 +81,3 @@ class CheckInInitializeTestCase(TestCase):
             check_in.thread_id,
             thread.id
         )
-
-
-class ParseWeightTestCase(TestCase):
-    def test_easy_no_unit(self):
-        init_weight = 191.1
-        easy_no_unit = str(init_weight)
-        results = get_weight_from_check_in_text(easy_no_unit)
-        weight, unit = results[0]
-        self.assertEqual(init_weight, weight)
-        self.assertEqual('', unit)
-
-    def test_easy_with_unit(self):
-        init_weight = 191.1
-        easy_with_unit = f'{init_weight}lbs'
-        results = get_weight_from_check_in_text(easy_with_unit)
-        weight, unit = results[0]
-        self.assertEqual(init_weight, weight)
-        self.assertEqual('lbs', unit)
-
-    def test_multi_same_units(self):
-        weights = (191.1, 89, 901)
-        weight_str = ' '.join(map(lambda x: f'{x}lbs', weights))
-        results = get_weight_from_check_in_text(weight_str)
-        self.assertEqual(len(weights), len(results))
-        for idx, weight in enumerate(weights):
-            self.assertEqual(weight, results[idx][0])
-            self.assertEqual('lbs', results[idx][1])
-
-    def test_multi_mixed_units(self):
-        weights = (191.1, 89, 901)
-        units = ('lbs', '', 'kg')
-        weight_str = ' '.join(map(lambda x: f'{x[0]}{x[1]}', zip(weights, units)))
-        results = get_weight_from_check_in_text(weight_str)
-        self.assertEqual(len(weights), len(results))
-        for idx, weight in enumerate(weights):
-            self.assertEqual(weight, results[idx][0])
-            self.assertEqual(units[idx], results[idx][1])
-
-    def test_multi_mixed_units(self):
-        examples = (
-            ('I weigh 181lbs', [(181.0, 'lbs')]),
-            ('All 92kg of me is ready', [(92.0, 'kg')]),
-            (
-                'I have four steaks weighing 102.lbs, 20kg, 93.985 lbs. Oh yeah, and one that weighs 84.323432 lbs.',
-                [(102.0, 'lbs'), (20.0, 'kg'), (93.985, 'lbs'), (84.323432, 'lbs')]
-            )
-        )
-        for example, expected in examples:
-            results = get_weight_from_check_in_text(example)
-            self.assertEqual(len(expected), len(results))
-            for idx, (weight, unit) in enumerate(expected):
-                self.assertEqual(weight, results[idx][0])
-                self.assertEqual(unit, results[idx][1])
