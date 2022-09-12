@@ -57,6 +57,7 @@ class CheckIn(ExternallyIdentifiable):
     started_at = models.DateTimeField(null=True)
     thread_id = models.CharField(max_length=64, null=True, blank=False)
     finished = models.BooleanField(default=False)
+    previous = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL)
 
     def __str__(self):
         return f'CheckIn({self.id}, {self.starting}, started: {self.started_at is not None})'

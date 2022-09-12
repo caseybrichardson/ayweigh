@@ -6,7 +6,7 @@ attrs==22.1.0
 boto3==1.24.56
 botocore==1.27.56
 charset-normalizer==2.1.0
-discord.py==2.0.0
+discord.py==2.0.1
 Django==4.1
 django-extensions==3.2.0
 django-storages==1.13.1

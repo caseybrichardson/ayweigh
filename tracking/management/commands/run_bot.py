@@ -1,15 +1,13 @@
 import asyncio
 import logging
-from typing import List
 
-import discord
 from asgiref.sync import sync_to_async
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.core.management import BaseCommand
 from django.utils import timezone
 
-from tracking.bot import WeighbotClient
+from tracking.bot import WeighbotClient, client
 from tracking.logic import initialize_contest, initialize_check_in, get_startable_check_in, get_running_check_in
 from tracking.models import Contest
 
@@ -59,12 +57,10 @@ async def poll_for_updates(bot: 'tracking.bot.WeighbotClient'):
 async def monitor():
     logger.info('Client initializing')
     try:
-        intents = discord.Intents.default()
-        intents.message_content = True
-        bot = WeighbotClient(intents=intents)
-        asyncio.create_task(bot.start(settings.BOT_TOKEN))
+        asyncio.create_task(client.start(settings.BOT_TOKEN))
+        # TODO: This is a hack. Really we need to wait for the client to be ready.
         await asyncio.sleep(10)
-        asyncio.create_task(poll_for_updates(bot))
+        asyncio.create_task(poll_for_updates(client))
     except Exception:
         logger.exception('Failed to initialize')
     logger.info('Done initializing')
