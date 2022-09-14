@@ -3,6 +3,8 @@ from typing import Optional
 
 import discord
 from discord import app_commands
+from asgiref.sync import sync_to_async
+from tracking.analysis import generate_personal_progress_report
 
 from tracking.constants import Units
 from tracking.errors import ChannelNotFound, ContestantNotFound, NoContestRunning, ContestantAlreadyJoined
@@ -98,7 +100,15 @@ async def weigh_in(
 async def personal_progress(
     interaction: discord.Interaction,
 ):
-    await interaction.response.send_message('Your current progress!')
+    user_id = interaction.user.id
+    channel_id = interaction.channel_id
+    try:
+        image = await sync_to_async(generate_personal_progress_report, thread_sensitive=True)(user_id, channel_id)
+        image_file = discord.File(image, 'personal_progress.png')
+        await interaction.response.send_message('Your current progress!', file=image_file)
+    except Exception:
+        logger.exception('Error during personal-progress generation')
+        await interaction.response.send_message('Sorry, there was an issue generating your graph!')
 
 
 @client.tree.command(
